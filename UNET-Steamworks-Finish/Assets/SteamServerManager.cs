@@ -8,9 +8,6 @@ public class SteamServerManager : MonoBehaviour {
 	static public SteamServerManager _instance;
     
     bool gs_Initialized = false;
-	
-	[HideInInspector]
-    public bool gs_ConnectedToSteam = false;
 
     protected Callback<SteamServersConnected_t> Callback_ServerConnected;
 
@@ -31,12 +28,11 @@ public class SteamServerManager : MonoBehaviour {
 
 	void OnSteamServerConnected(SteamServersConnected_t pLogonSuccess) {
 		Debug.Log("SPACEWARS connected to Steam successfully");
-		gs_ConnectedToSteam = true;
-        SteamAPICall_t try_toHost = SteamMatchmaking.CreateLobby(ELobbyType.k_ELobbyTypePublic, 4);
+        SteamMatchmaking.CreateLobby(ELobbyType.k_ELobbyTypePublic, 4);
 	}
 
     void OnDisable(){
-		if(gs_Initialized || gs_ConnectedToSteam){
+		if(gs_Initialized){
 		SteamGameServer.LogOff();
 		GameServer.Shutdown();
 		Debug.Log("Shutdown.");
@@ -44,10 +40,9 @@ public class SteamServerManager : MonoBehaviour {
 	}
 
     void Update(){
-        if(!gs_Initialized) {
+        if(!gs_Initialized)
 			return;
-		}
-
+			
 		GameServer.RunCallbacks();
     }
 }

@@ -18,6 +18,8 @@ public class SteamNetworkManager : NetworkManager {
 	bool isHost = false;
 
 	void Start(){
+        awaitMsg.gameObject.SetActive(false);
+
 		Callback_lobbyCreated = Callback<LobbyCreated_t>.Create(OnLobbyCreated);
 		Callback_lobbyEnter = Callback<LobbyEnter_t>.Create(OnLobbyEntered);
 		Callback_lobbyList = Callback<LobbyMatchList_t>.Create(OnGetLobbiesList);
@@ -30,6 +32,7 @@ public class SteamNetworkManager : NetworkManager {
 
     public void CreateMatch(){
 		awaitMsg.text = "Creating Match...";
+        awaitMsg.gameObject.SetActive(true);
 		ToggleMenu();
         SteamServerManager._instance.CreateServer();
     }
@@ -37,6 +40,8 @@ public class SteamNetworkManager : NetworkManager {
     public void FindMatch(){
 		ToggleMenu();
         awaitMsg.text = "Finding Match...";
+        awaitMsg.gameObject.SetActive(true);
+        SteamMatchmaking.RequestLobbyList();
     }
 
 	void ToggleMenu(){
@@ -45,22 +50,17 @@ public class SteamNetworkManager : NetworkManager {
 	}
 
     void OnLobbyCreated(LobbyCreated_t result){
-
         if (result.m_eResult == EResult.k_EResultOK)
             Debug.Log("Lobby created -- SUCCESS!");
         else{
             Debug.Log("Lobby created -- failure ...");
             return;
         }
-
         uint serverIp = SteamGameServer.GetPublicIP();
         int ipaddr = System.Net.IPAddress.HostToNetworkOrder((int)serverIp);
         string ip = new System.Net.IPAddress(BitConverter.GetBytes(ipaddr)).ToString();
-
 		SteamMatchmaking.SetLobbyData((CSteamID)result.m_ulSteamIDLobby, "ServerIP", ip);
-
         isHost = true;
-
 		awaitMsg.text = "";
         StartHost();
 	}
@@ -68,7 +68,7 @@ public class SteamNetworkManager : NetworkManager {
     void OnLobbyEntered(LobbyEnter_t result){
 		if(!isHost){
 			networkAddress = SteamMatchmaking.GetLobbyData((CSteamID)result.m_ulSteamIDLobby, "ServerIP");
-			awaitMsg.text = "";
+            awaitMsg.gameObject.SetActive(false);
 			StartClient();
 		}
 	}
@@ -76,9 +76,12 @@ public class SteamNetworkManager : NetworkManager {
     void OnGetLobbiesList(LobbyMatchList_t result){
         for(int i=0; i < result.m_nLobbiesMatching; i++)
         {
-			if(SteamMatchmaking.GetLobbyData((CSteamID)SteamMatchmaking.GetLobbyByIndex(i), "ServerIP") != null){
-				SteamAPICall_t try_joinLobby = SteamMatchmaking.JoinLobby ((CSteamID)SteamMatchmaking.GetLobbyByIndex (i));
-			}
+			if(SteamMatchmaking.GetLobbyData((CSteamID)SteamMatchmaking.GetLobbyByIndex(i), "ServerIP") != ""){
+				SteamMatchmaking.JoinLobby ((CSteamID)SteamMatchmaking.GetLobbyByIndex (i));
+                return;
+			} else {
+                awaitMsg.text = "No matches found.";
+            }
         }
 	}
 }
